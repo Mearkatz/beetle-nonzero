@@ -1,46 +1,55 @@
-use num::Zero;
+use num::{BigUint, CheckedSub, One, PrimInt};
 
 #[deny(missing_docs)]
 
-/// Represents a value that is known to be unequal to zero.
-pub struct NonZero<T: Zero> {
+/// A primitive unsigned integer like u8 or u32 which is known to be non-zero
+pub struct NonZero<T: PrimInt + Copy> {
     value: T,
 }
 
-impl<T: Zero> NonZero<T> {
+impl<T: PrimInt + Copy> NonZero<T> {
     // Tries to create a new instance of NonZero.
     // If `value` equals zero, this returns None,
     // otherwise this returns a new NonZero containing `value`.
     pub fn new(value: T) -> Option<Self> {
-        if value.is_zero() {
-            None
-        } else {
-            Some(Self { value })
-        }
+        let value: T = value.checked_sub(&T::one())?;
+        Some(Self { value })
     }
 
-    /// Returns a reference to the non-zero value stored in `self`
-    pub fn get(&self) -> &T {
-        &self.value
-    }
-}
-
-/// Represents a value that might be unequal to zero.
-/// Only use this instead of NonZero if you are sure that `value` is NonZero,
-/// and you need the extra performance
-pub struct NonZeroUnchecked<T: Zero> {
-    /// The non-zero value
-    pub value: T,
-}
-
-impl<T: Zero> NonZeroUnchecked<T> {
-    /// Creates a new instance of NonZeroUnchecked, without checking if value is non-zero
-    pub fn new(value: T) -> Self {
+    /// Unsafe version of new that doesn't ensure the value is nonzero
+    pub fn unchecked_new(value: T) -> Self {
+        let value = value - T::one();
         Self { value }
     }
 
-    /// Tries converting a NonZeroUnchecked to a NonZero.
-    pub fn check(self) -> Option<NonZero<T>> {
-        NonZero::new(self.value)
+    /// Returns a reference to the non-zero value stored in `self`
+    pub fn get(&self) -> T {
+        self.value + T::one()
+    }
+}
+
+/// A `BigUint` that is known to be non-zero.
+pub struct NonZeroBigUint {
+    value: BigUint,
+}
+
+impl NonZeroBigUint {
+    // Tries to create a new instance of NonZero.
+    // If `value` equals zero, this returns None,
+    // otherwise this returns a new NonZero containing `value`.
+    pub fn new(value: BigUint) -> Option<Self> {
+        let value: BigUint = value.checked_sub(&BigUint::one())?;
+        Some(Self { value })
+    }
+
+    /// Unsafe version of new that doesn't ensure the value is nonzero
+    pub fn unchecked_new(value: BigUint) -> Self {
+        let value: BigUint = value - BigUint::one();
+        Self { value }
+    }
+
+    /// Returns a reference to the non-zero value stored in `self`
+    pub fn get(&self) -> BigUint {
+        self.value.clone() + BigUint::one()
     }
 }
