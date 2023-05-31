@@ -1,55 +1,170 @@
-use num::{BigUint, CheckedSub, One, PrimInt};
+use derive_more::{
+    Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Display,
+    DivAssign, MulAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
+};
+use num::{PrimInt, Unsigned};
 
-#[deny(missing_docs)]
-
-/// A primitive unsigned integer like u8 or u32 which is known to be non-zero
-pub struct NonZero<T: PrimInt + Copy> {
+/// A wrapper around a primitive non-zero integer like `i32` or `u32`.
+#[derive(
+    Copy,
+    Clone,
+    PartialOrd,
+    Ord,
+    PartialEq,
+    Eq,
+    Add,
+    Sub,
+    AddAssign,
+    SubAssign,
+    MulAssign,
+    DivAssign,
+    Shl,
+    Shr,
+    ShlAssign,
+    ShrAssign,
+    BitAnd,
+    BitOr,
+    BitXor,
+    BitAndAssign,
+    BitOrAssign,
+    BitXorAssign,
+    Display,
+    Debug,
+)]
+pub struct NonZero<T: PrimInt> {
     value: T,
 }
 
-impl<T: PrimInt + Copy> NonZero<T> {
-    // Tries to create a new instance of NonZero.
-    // If `value` equals zero, this returns None,
-    // otherwise this returns a new NonZero containing `value`.
+impl<T: PrimInt> NonZero<T> {
     pub fn new(value: T) -> Option<Self> {
-        let value: T = value.checked_sub(&T::one())?;
-        Some(Self { value })
+        if value.is_zero() {
+            None
+        } else {
+            Some(Self { value })
+        }
     }
 
-    /// Unsafe version of new that doesn't ensure the value is nonzero
-    pub fn unchecked_new(value: T) -> Self {
-        let value = value - T::one();
-        Self { value }
-    }
-
-    /// Returns a reference to the non-zero value stored in `self`
+    /// Returns a destructured copy of the NonZero value.
     pub fn get(&self) -> T {
-        self.value + T::one()
+        self.value
     }
 }
 
-/// A `BigUint` that is known to be non-zero.
-pub struct NonZeroBigUint {
-    value: BigUint,
+impl<T: PrimInt> std::ops::Mul for NonZero<T> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            value: (self.value * rhs.value),
+        }
+    }
 }
 
-impl NonZeroBigUint {
-    // Tries to create a new instance of NonZero.
-    // If `value` equals zero, this returns None,
-    // otherwise this returns a new NonZero containing `value`.
-    pub fn new(value: BigUint) -> Option<Self> {
-        let value: BigUint = value.checked_sub(&BigUint::one())?;
-        Some(Self { value })
+impl<T: PrimInt> std::ops::Div for NonZero<T> {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        // This would always work, but returning an Option is annoying.
+        // Self::new(self.value * rhs.value)
+
+        // Instead, we'll simply use 1 as our minimum value
+        let ans: T = (self.value / rhs.value).min(T::one());
+        Self { value: ans }
+    }
+}
+
+pub struct RangeNonZeroUnsigned<T: PrimInt + Unsigned> {
+    pub start: NonZero<T>,
+    pub stop: NonZero<T>,
+
+    // Keeps track of the current value
+    value: NonZero<T>,
+}
+
+impl<T: PrimInt + Unsigned> RangeNonZeroUnsigned<T> {
+    pub fn new(start: NonZero<T>, stop: NonZero<T>) -> Self {
+        Self {
+            start,
+            stop,
+            value: start,
+        }
     }
 
-    /// Unsafe version of new that doesn't ensure the value is nonzero
-    pub fn unchecked_new(value: BigUint) -> Self {
-        let value: BigUint = value - BigUint::one();
-        Self { value }
+    pub fn from_primitives(start: T, stop: T) -> Option<Self> {
+        let start = start.to_nonzero()?;
+        let stop = stop.to_nonzero()?;
+        Some(Self {
+            start,
+            stop,
+            value: start,
+        })
+    }
+}
+
+impl<T: PrimInt + std::ops::AddAssign + Unsigned> Iterator for RangeNonZeroUnsigned<T> {
+    type Item = NonZero<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.value < self.stop {
+            let one: NonZero<T> = NonZero { value: T::one() };
+            self.value += one;
+            Some(self.value)
+        } else {
+            None
+        }
+    }
+}
+
+// /// Retursn a 'range' of `NonZero<u8>`s
+// pub fn range_nonzero_u8(
+//     start: NonZero<u8>,
+//     stop: NonZero<u8>,
+// ) -> impl Iterator<Item = NonZero<u8>> {
+//     // Because NonZero<u8> doesn't implement std::iter::Step,
+//     // we just yank the values out of start and stop.
+
+//     // let start = start.value;
+//     // let stop = stop.value;
+
+//     // (start..stop).map(|value| NonZero { value })
+
+//     (start..stop)
+// }
+
+pub trait ToNonZero
+where
+    Self: PrimInt,
+{
+    fn to_nonzero(self) -> Option<NonZero<Self>> {
+        NonZero::new(self)
+    }
+}
+
+impl<T: PrimInt> ToNonZero for T {}
+
+mod tests {
+
+    #[test]
+    fn ops_work() {
+        use crate::ToNonZero;
+        let one: crate::NonZero<u8> = 1u8.to_nonzero().unwrap();
+        let two: crate::NonZero<u8> = 2u8.to_nonzero().unwrap();
+        let three: crate::NonZero<u8> = 3u8.to_nonzero().unwrap();
+
+        // + - * /
+        assert_eq!(one + two, three);
+        assert_eq!(three - two, one);
+        assert_eq!(two * one, two);
+        assert_eq!(three / two, one);
     }
 
-    /// Returns a reference to the non-zero value stored in `self`
-    pub fn get(&self) -> BigUint {
-        self.value.clone() + BigUint::one()
+    #[test]
+    fn ranges_work() {
+        use crate::RangeNonZeroUnsigned;
+        let _ = RangeNonZeroUnsigned::from_primitives(1u8, 10u8).unwrap();
+        let _ = RangeNonZeroUnsigned::from_primitives(1u16, 10u16).unwrap();
+        let _ = RangeNonZeroUnsigned::from_primitives(1u32, 10u32).unwrap();
+        let _ = RangeNonZeroUnsigned::from_primitives(1u64, 10u64).unwrap();
+        let _ = RangeNonZeroUnsigned::from_primitives(1u128, 10u128).unwrap();
     }
 }
