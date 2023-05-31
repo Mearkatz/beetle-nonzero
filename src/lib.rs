@@ -2,7 +2,7 @@ use derive_more::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Display,
     DivAssign, MulAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
-use num::{PrimInt, Unsigned};
+use num::{One, PrimInt, Unsigned};
 
 /// A wrapper around a primitive non-zero integer like `i32` or `u32`.
 #[derive(
@@ -115,21 +115,11 @@ impl<T: PrimInt + std::ops::AddAssign + Unsigned> Iterator for RangeNonZeroUnsig
     }
 }
 
-// /// Retursn a 'range' of `NonZero<u8>`s
-// pub fn range_nonzero_u8(
-//     start: NonZero<u8>,
-//     stop: NonZero<u8>,
-// ) -> impl Iterator<Item = NonZero<u8>> {
-//     // Because NonZero<u8> doesn't implement std::iter::Step,
-//     // we just yank the values out of start and stop.
-
-//     // let start = start.value;
-//     // let stop = stop.value;
-
-//     // (start..stop).map(|value| NonZero { value })
-
-//     (start..stop)
-// }
+impl<T: PrimInt> One for NonZero<T> {
+    fn one() -> Self {
+        Self { value: T::one() }
+    }
+}
 
 pub trait ToNonZero
 where
