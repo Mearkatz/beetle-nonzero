@@ -106,9 +106,10 @@ impl<T: PrimInt + std::ops::AddAssign + Unsigned> Iterator for RangeNonZeroUnsig
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.value < self.stop {
+            let current_value = self.value;
             let one: NonZero<T> = NonZero { value: T::one() };
             self.value += one;
-            Some(self.value)
+            Some(current_value)
         } else {
             None
         }
