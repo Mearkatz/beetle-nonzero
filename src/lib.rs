@@ -1,41 +1,30 @@
-use derive_more::{
-    Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Display,
-    DivAssign, MulAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
-};
-use num::{One, PrimInt, Unsigned};
+use num::{traits::Pow, Integer, One, PrimInt, Unsigned};
+use std::fmt::Debug;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 /// A wrapper around a primitive non-zero integer like `i32` or `u32`.
-#[derive(
-    Copy,
-    Clone,
-    PartialOrd,
-    Ord,
-    PartialEq,
-    Eq,
-    Add,
-    Sub,
-    AddAssign,
-    SubAssign,
-    MulAssign,
-    DivAssign,
-    Shl,
-    Shr,
-    ShlAssign,
-    ShrAssign,
-    BitAnd,
-    BitOr,
-    BitXor,
-    BitAndAssign,
-    BitOrAssign,
-    BitXorAssign,
-    Display,
-    Debug,
-)]
-pub struct NonZero<T: PrimInt> {
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub struct NonZero<T: PrimUint> {
     value: T,
 }
 
-impl<T: PrimInt> NonZero<T> {
+pub trait PrimUint: Sized + Debug + PrimInt + Unsigned + Integer {}
+impl PrimUint for u8 {}
+impl PrimUint for u16 {}
+impl PrimUint for u32 {}
+impl PrimUint for u64 {}
+impl PrimUint for u128 {}
+
+impl<T: PrimUint> NonZero<T> {
+    pub fn is_even(&self) -> bool {
+        self.get().is_even()
+    }
+    pub fn is_odd(&self) -> bool {
+        self.get().is_odd()
+    }
+}
+
+impl<T: PrimUint> NonZero<T> {
     pub fn new(value: T) -> Option<Self> {
         if value.is_zero() {
             None
@@ -50,7 +39,29 @@ impl<T: PrimInt> NonZero<T> {
     }
 }
 
-impl<T: PrimInt> std::ops::Mul for NonZero<T> {
+impl<T: PrimUint> Add for NonZero<T> {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            value: self.get() + rhs.get(),
+        }
+    }
+}
+
+impl<T: PrimUint> Sub for NonZero<T> {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        if self <= rhs {
+            panic!("{self:?} - {rhs:?} produces an underflow or value equal to zero");
+        }
+
+        Self {
+            value: self.get() - rhs.get(),
+        }
+    }
+}
+
+impl<T: PrimUint> Mul for NonZero<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -60,20 +71,60 @@ impl<T: PrimInt> std::ops::Mul for NonZero<T> {
     }
 }
 
-impl<T: PrimInt> std::ops::Div for NonZero<T> {
+impl<T: PrimUint> Div for NonZero<T> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        // This would always work, but returning an Option is annoying.
-        // Self::new(self.value * rhs.value)
+        if self <= rhs {
+            panic!("{self:?} / {rhs:?} produces an underflow or value equal to zero");
+        }
 
-        // Instead, we'll simply use 1 as our minimum value
-        let ans: T = (self.value / rhs.value).min(T::one());
-        Self { value: ans }
+        Self {
+            value: self.get() / rhs.get(),
+        }
     }
 }
 
-pub struct RangeNonZeroUnsigned<T: PrimInt + Unsigned> {
+impl<T: PrimUint> Pow<u32> for NonZero<T> {
+    type Output = Self;
+    fn pow(self, rhs: u32) -> Self::Output {
+        Self {
+            value: self.get().pow(rhs),
+        }
+    }
+}
+
+impl<T: PrimUint> AddAssign for NonZero<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
+    }
+}
+
+impl<T: PrimUint> SubAssign for NonZero<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs
+    }
+}
+
+impl<T: PrimUint> MulAssign for NonZero<T> {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs
+    }
+}
+
+impl<T: PrimUint> DivAssign for NonZero<T> {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs
+    }
+}
+
+impl<T: PrimUint> One for NonZero<T> {
+    fn one() -> Self {
+        Self { value: T::one() }
+    }
+}
+
+pub struct RangeNonZeroUnsigned<T: PrimUint> {
     pub start: NonZero<T>,
     pub stop: NonZero<T>,
 
@@ -81,7 +132,7 @@ pub struct RangeNonZeroUnsigned<T: PrimInt + Unsigned> {
     value: NonZero<T>,
 }
 
-impl<T: PrimInt + Unsigned> RangeNonZeroUnsigned<T> {
+impl<T: PrimUint> RangeNonZeroUnsigned<T> {
     pub fn new(start: NonZero<T>, stop: NonZero<T>) -> Self {
         Self {
             start,
@@ -101,7 +152,7 @@ impl<T: PrimInt + Unsigned> RangeNonZeroUnsigned<T> {
     }
 }
 
-impl<T: PrimInt + std::ops::AddAssign + Unsigned> Iterator for RangeNonZeroUnsigned<T> {
+impl<T: PrimUint> Iterator for RangeNonZeroUnsigned<T> {
     type Item = NonZero<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -116,22 +167,16 @@ impl<T: PrimInt + std::ops::AddAssign + Unsigned> Iterator for RangeNonZeroUnsig
     }
 }
 
-impl<T: PrimInt> One for NonZero<T> {
-    fn one() -> Self {
-        Self { value: T::one() }
-    }
-}
-
 pub trait ToNonZero
 where
-    Self: PrimInt,
+    Self: PrimUint,
 {
     fn to_nonzero(self) -> Option<NonZero<Self>> {
         NonZero::new(self)
     }
 }
 
-impl<T: PrimInt> ToNonZero for T {}
+impl<T: PrimUint> ToNonZero for T {}
 
 mod tests {
 
