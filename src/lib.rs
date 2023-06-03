@@ -75,7 +75,7 @@ impl<T: PrimUint> Div for NonZero<T> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        if self <= rhs {
+        if self < rhs {
             panic!("{self:?} / {rhs:?} produces an underflow or value equal to zero");
         }
 
