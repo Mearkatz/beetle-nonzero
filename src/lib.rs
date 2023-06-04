@@ -1,4 +1,5 @@
 use num::{traits::Pow, Integer, One, PrimInt, Unsigned};
+use num::{BigUint, Zero};
 use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
@@ -50,11 +51,19 @@ impl<T: PrimUint> Add for NonZero<T> {
 
 impl<T: PrimUint> Sub for NonZero<T> {
     type Output = Self;
+    #[cfg(debug_assertions)]
     fn sub(self, rhs: Self) -> Self::Output {
-        if self <= rhs {
+        if self < rhs {
             panic!("{self:?} - {rhs:?} produces an underflow or value equal to zero");
         }
 
+        Self {
+            value: self.get() - rhs.get(),
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn sub(self, rhs: Self) -> Self::Output {
         Self {
             value: self.get() - rhs.get(),
         }
@@ -74,11 +83,19 @@ impl<T: PrimUint> Mul for NonZero<T> {
 impl<T: PrimUint> Div for NonZero<T> {
     type Output = Self;
 
+    #[cfg(debug_assertions)]
     fn div(self, rhs: Self) -> Self::Output {
         if self < rhs {
             panic!("{self:?} / {rhs:?} produces an underflow or value equal to zero");
         }
 
+        Self {
+            value: self.get() / rhs.get(),
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn div(self, rhs: Self) -> Self::Output {
         Self {
             value: self.get() / rhs.get(),
         }
@@ -124,6 +141,7 @@ impl<T: PrimUint> One for NonZero<T> {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct RangeNonZeroUnsigned<T: PrimUint> {
     pub start: NonZero<T>,
     pub stop: NonZero<T>,
@@ -178,7 +196,175 @@ where
 
 impl<T: PrimUint> ToNonZero for T {}
 
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub struct NonZeroBigUint {
+    value: BigUint,
+}
+
+impl NonZeroBigUint {
+    pub fn is_even(&self) -> bool {
+        self.get().is_even()
+    }
+    pub fn is_odd(&self) -> bool {
+        self.get().is_odd()
+    }
+}
+
+// NonZero<u*> -> NonZeroBigUint
+impl From<NonZero<u8>> for NonZeroBigUint {
+    fn from(value: NonZero<u8>) -> Self {
+        let value: BigUint = BigUint::from(value.value);
+        Self { value }
+    }
+}
+impl From<NonZero<u16>> for NonZeroBigUint {
+    fn from(value: NonZero<u16>) -> Self {
+        let value: BigUint = BigUint::from(value.value);
+        Self { value }
+    }
+}
+impl From<NonZero<u32>> for NonZeroBigUint {
+    fn from(value: NonZero<u32>) -> Self {
+        let value: BigUint = BigUint::from(value.value);
+        Self { value }
+    }
+}
+impl From<NonZero<u64>> for NonZeroBigUint {
+    fn from(value: NonZero<u64>) -> Self {
+        let value: BigUint = BigUint::from(value.value);
+        Self { value }
+    }
+}
+impl From<NonZero<u128>> for NonZeroBigUint {
+    fn from(value: NonZero<u128>) -> Self {
+        let value: BigUint = BigUint::from(value.value);
+        Self { value }
+    }
+}
+
+impl NonZeroBigUint {
+    pub fn new(value: BigUint) -> Option<Self> {
+        if value.is_zero() {
+            None
+        } else {
+            Some(Self { value })
+        }
+    }
+
+    /// Returns a destructured copy of the NonZero value.
+    pub fn get(&self) -> &BigUint {
+        &self.value
+    }
+}
+
+impl Add for NonZeroBigUint {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            value: self.get() + rhs.get(),
+        }
+    }
+}
+
+impl Sub for NonZeroBigUint {
+    type Output = Self;
+    #[cfg(debug_assertions)]
+    fn sub(self, rhs: Self) -> Self::Output {
+        if self < rhs {
+            panic!("{self:?} - {rhs:?} produces an underflow or value equal to zero");
+        }
+
+        Self {
+            value: self.get() - rhs.get(),
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            value: self.get() - rhs.get(),
+        }
+    }
+}
+
+impl Mul for NonZeroBigUint {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            value: (self.value * rhs.value),
+        }
+    }
+}
+
+impl Div for NonZeroBigUint {
+    type Output = Self;
+
+    #[cfg(debug_assertions)]
+    fn div(self, rhs: Self) -> Self::Output {
+        if self < rhs {
+            panic!("{self:?} / {rhs:?} produces an underflow or value equal to zero");
+        }
+
+        Self {
+            value: self.get() / rhs.get(),
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn div(self, rhs: Self) -> Self::Output {
+        Self {
+            value: self.get() / rhs.get(),
+        }
+    }
+}
+
+impl Pow<u32> for NonZeroBigUint {
+    type Output = Self;
+    fn pow(self, rhs: u32) -> Self::Output {
+        Self {
+            value: self.get().pow(rhs),
+        }
+    }
+}
+
+impl AddAssign for NonZeroBigUint {
+    fn add_assign(&mut self, rhs: Self) {
+        self.value.add_assign(rhs.get())
+    }
+}
+
+impl SubAssign for NonZeroBigUint {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.value.sub_assign(rhs.get())
+    }
+}
+
+impl MulAssign for NonZeroBigUint {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.value.mul_assign(rhs.get())
+    }
+}
+
+impl DivAssign for NonZeroBigUint {
+    fn div_assign(&mut self, rhs: Self) {
+        self.value.div_assign(rhs.get())
+    }
+}
+
+impl One for NonZeroBigUint {
+    fn one() -> Self {
+        Self {
+            value: BigUint::one(),
+        }
+    }
+}
+
+#[allow(unused_imports)]
 mod tests {
+    use num::One;
+
+    use crate::NonZeroBigUint;
 
     #[test]
     fn ops_work() {
@@ -202,5 +388,14 @@ mod tests {
         let _ = RangeNonZeroUnsigned::from_primitives(1u32, 10u32).unwrap();
         let _ = RangeNonZeroUnsigned::from_primitives(1u64, 10u64).unwrap();
         let _ = RangeNonZeroUnsigned::from_primitives(1u128, 10u128).unwrap();
+    }
+
+    #[test]
+    #[allow(clippy::redundant_clone)]
+    fn assignment_ops_for_nonzero_biguints_work() {
+        let one = NonZeroBigUint::one();
+        let mut big = one.clone();
+        big += one.clone();
+        assert_eq!(big, one.clone() + one.clone());
     }
 }
