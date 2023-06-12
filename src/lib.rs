@@ -17,15 +17,7 @@ impl PrimUint for u64 {}
 impl PrimUint for u128 {}
 
 impl<T: PrimUint> NonZero<T> {
-    pub fn is_even(&self) -> bool {
-        self.get().is_even()
-    }
-    pub fn is_odd(&self) -> bool {
-        self.get().is_odd()
-    }
-}
-
-impl<T: PrimUint> NonZero<T> {
+    /// Returns a new NonZero<T> if `value` is non-zero, else None
     pub fn new(value: T) -> Option<Self> {
         if value.is_zero() {
             None
@@ -37,6 +29,18 @@ impl<T: PrimUint> NonZero<T> {
     /// Returns a destructured copy of the NonZero value.
     pub fn get(&self) -> T {
         self.value
+    }
+
+    pub fn is_even(&self) -> bool {
+        self.get().is_even()
+    }
+    pub fn is_odd(&self) -> bool {
+        self.get().is_odd()
+    }
+
+    /// Returns the number of trailing zeros in the binary representation of this number
+    pub fn trailing_zeros(&self) -> u32 {
+        self.get().trailing_zeros()
     }
 }
 
@@ -201,15 +205,6 @@ pub struct NonZeroBigUint {
     value: BigUint,
 }
 
-impl NonZeroBigUint {
-    pub fn is_even(&self) -> bool {
-        self.get().is_even()
-    }
-    pub fn is_odd(&self) -> bool {
-        self.get().is_odd()
-    }
-}
-
 // NonZero<u*> -> NonZeroBigUint
 impl From<NonZero<u8>> for NonZeroBigUint {
     fn from(value: NonZero<u8>) -> Self {
@@ -254,6 +249,24 @@ impl NonZeroBigUint {
     /// Returns a destructured copy of the NonZero value.
     pub fn get(&self) -> &BigUint {
         &self.value
+    }
+
+    pub fn is_even(&self) -> bool {
+        self.get().is_even()
+    }
+
+    pub fn is_odd(&self) -> bool {
+        self.get().is_odd()
+    }
+
+    /// Returns the number of trailing_zeros
+    pub fn trailing_zeros(&self) -> u64 {
+        /*
+        Justification for unwrap_unchecked:
+        `trailing_zeros` only returns None for values equal to zero,
+        which should be impossible for this type, so this is fine.
+        */
+        unsafe { self.get().trailing_zeros().unwrap_unchecked() }
     }
 }
 
