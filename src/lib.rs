@@ -1,20 +1,16 @@
-use num::{traits::Pow, Integer, One, PrimInt, Unsigned};
+use num::{traits::Pow, Integer, One};
 use num::{BigUint, Zero};
-use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use traits::{PrimUint, ToNonZero};
+
+pub mod ranges;
+pub mod traits;
 
 /// A wrapper around a primitive non-zero integer like `i32` or `u32`.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub struct NonZero<T: PrimUint> {
     value: T,
 }
-
-pub trait PrimUint: Sized + Debug + PrimInt + Unsigned + Integer {}
-impl PrimUint for u8 {}
-impl PrimUint for u16 {}
-impl PrimUint for u32 {}
-impl PrimUint for u64 {}
-impl PrimUint for u128 {}
 
 impl<T: PrimUint> NonZero<T> {
     /// Returns a new NonZero<T> if `value` is non-zero, else None
@@ -142,59 +138,6 @@ impl<T: PrimUint> DivAssign for NonZero<T> {
 impl<T: PrimUint> One for NonZero<T> {
     fn one() -> Self {
         Self { value: T::one() }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct RangeNonZeroUnsigned<T: PrimUint> {
-    pub start: NonZero<T>,
-    pub stop: NonZero<T>,
-
-    // Keeps track of the current value
-    value: NonZero<T>,
-}
-
-impl<T: PrimUint> RangeNonZeroUnsigned<T> {
-    pub fn new(start: NonZero<T>, stop: NonZero<T>) -> Self {
-        Self {
-            start,
-            stop,
-            value: start,
-        }
-    }
-
-    pub fn from_primitives(start: T, stop: T) -> Option<Self> {
-        let start = start.to_nonzero()?;
-        let stop = stop.to_nonzero()?;
-        Some(Self {
-            start,
-            stop,
-            value: start,
-        })
-    }
-}
-
-impl<T: PrimUint> Iterator for RangeNonZeroUnsigned<T> {
-    type Item = NonZero<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.value < self.stop {
-            let current_value = self.value;
-            let one: NonZero<T> = NonZero { value: T::one() };
-            self.value += one;
-            Some(current_value)
-        } else {
-            None
-        }
-    }
-}
-
-pub trait ToNonZero
-where
-    Self: PrimUint,
-{
-    fn to_nonzero(self) -> Option<NonZero<Self>> {
-        NonZero::new(self)
     }
 }
 
@@ -395,7 +338,7 @@ mod tests {
 
     #[test]
     fn ranges_work() {
-        use crate::RangeNonZeroUnsigned;
+        use crate::ranges::RangeNonZeroUnsigned;
         let _ = RangeNonZeroUnsigned::from_primitives(1u8, 10u8).unwrap();
         let _ = RangeNonZeroUnsigned::from_primitives(1u16, 10u16).unwrap();
         let _ = RangeNonZeroUnsigned::from_primitives(1u32, 10u32).unwrap();
