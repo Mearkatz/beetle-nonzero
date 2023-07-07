@@ -2,7 +2,9 @@
 
 use num::{BigUint, One};
 
-use crate::{traits::ToNonZero, NonZero, NonZeroBigUint, PrimUint};
+use crate::{
+    nonzero::NonZero, nonzero_biguint::NonZeroBigUint, traits::PrimUint, traits::ToNonZero,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct RangeNonZeroUnsigned<T: PrimUint> {
@@ -39,8 +41,7 @@ impl<T: PrimUint> Iterator for RangeNonZeroUnsigned<T> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.value < self.stop {
             let current_value = self.value;
-            let one: NonZero<T> = NonZero { value: T::one() };
-            self.value += one;
+            self.value += One::one();
             Some(current_value)
         } else {
             None

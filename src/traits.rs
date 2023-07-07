@@ -1,7 +1,7 @@
 use num::{Integer, PrimInt, Unsigned};
 use std::fmt::Debug;
 
-use crate::NonZero;
+use crate::nonzero::NonZero;
 
 pub trait PrimUint: Sized + Debug + PrimInt + Unsigned + Integer {}
 impl PrimUint for u8 {}
