@@ -1,6 +1,6 @@
 [package]
 name = "beetle-nonzero"
-version = "0.2.9"
+version = "0.3.0"
 edition = "2021"
 authors = ["beetle"]
 description = "What if the built-in NonZero types were generic"

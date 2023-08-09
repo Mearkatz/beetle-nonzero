@@ -1,13 +1,11 @@
 //! Range related types
 
-use num::{BigUint, One};
+use num::One;
 
-use crate::{
-    nonzero::NonZero, nonzero_biguint::NonZeroBigUint, traits::PrimUint, traits::ToNonZero,
-};
+use crate::{traits::Uint, NonZero};
 
-#[derive(Debug, Clone, Copy)]
-pub struct RangeNonZeroUnsigned<T: PrimUint> {
+#[derive(Debug, Clone)]
+pub struct RangeNonZero<T: Uint> {
     pub start: NonZero<T>,
     pub stop: NonZero<T>,
 
@@ -15,51 +13,8 @@ pub struct RangeNonZeroUnsigned<T: PrimUint> {
     value: NonZero<T>,
 }
 
-impl<T: PrimUint> RangeNonZeroUnsigned<T> {
+impl<T: Uint> RangeNonZero<T> {
     pub fn new(start: NonZero<T>, stop: NonZero<T>) -> Self {
-        Self {
-            start,
-            stop,
-            value: start,
-        }
-    }
-
-    pub fn from_primitives(start: T, stop: T) -> Option<Self> {
-        let start = start.to_nonzero()?;
-        let stop = stop.to_nonzero()?;
-        Some(Self {
-            start,
-            stop,
-            value: start,
-        })
-    }
-}
-
-impl<T: PrimUint> Iterator for RangeNonZeroUnsigned<T> {
-    type Item = NonZero<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.value < self.stop {
-            let current_value = self.value;
-            self.value += One::one();
-            Some(current_value)
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct RangeNonZeroBigUint {
-    pub start: NonZeroBigUint,
-    pub stop: NonZeroBigUint,
-
-    // Keeps track of the current value
-    value: NonZeroBigUint,
-}
-
-impl RangeNonZeroBigUint {
-    pub fn new(start: NonZeroBigUint, stop: NonZeroBigUint) -> Self {
         Self {
             start: start.clone(),
             stop,
@@ -67,21 +22,24 @@ impl RangeNonZeroBigUint {
         }
     }
 
-    pub fn from_biguints(start: BigUint, stop: BigUint) -> Option<Self> {
-        let start = NonZeroBigUint::new(start)?;
-        let stop = NonZeroBigUint::new(stop)?;
-        Some(Self::new(start, stop))
+    pub fn from_primitives(start: T, stop: T) -> Option<Self> {
+        let start = NonZero::new(start)?;
+        let stop = NonZero::new(stop)?;
+        Some(Self {
+            start: start.clone(),
+            stop,
+            value: start,
+        })
     }
 }
 
-impl Iterator for RangeNonZeroBigUint {
-    type Item = NonZeroBigUint;
+impl<T: Uint> Iterator for RangeNonZero<T> {
+    type Item = NonZero<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.value < self.stop {
             let current_value = self.value.clone();
-            let one = NonZeroBigUint::one();
-            self.value += one;
+            self.value += One::one();
             Some(current_value)
         } else {
             None
