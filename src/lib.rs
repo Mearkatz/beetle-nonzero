@@ -1,11 +1,8 @@
 pub mod ranges;
 pub mod traits;
 
-use num::{traits::Pow, One, PrimInt};
-use std::{
-    num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize},
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
-};
+use num::One;
+use std::num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize};
 use traits::Uint;
 
 /// A wrapper around a primitive non-zero integer like `i32` or `u32`.
@@ -31,155 +28,190 @@ impl_from_primitive!(NonZero<u64>, NonZeroU64);
 impl_from_primitive!(NonZero<u128>, NonZeroU128);
 impl_from_primitive!(NonZero<usize>, NonZeroUsize);
 
-// NonZero<u*> Primitive impl's
-impl<T: Uint + PrimInt> NonZero<T> {
-    pub fn trailing_zeros(&self) -> u64 {
-        self.value.trailing_zeros().into()
-    }
-
-    pub fn leading_zeros(&self) -> u64 {
-        self.value.leading_zeros().into()
-    }
-
-    pub fn trailing_ones(&self) -> u64 {
-        self.value.trailing_ones().into()
-    }
-
-    pub fn leading_ones(&self) -> u64 {
-        self.value.leading_ones().into()
-    }
-
-    pub fn shift_right(&self, rhs: usize) -> Self {
-        Self {
-            value: self.value >> rhs,
-        }
-    }
-    pub fn shift_left(&self, rhs: usize) -> Self {
-        Self {
-            value: self.value << rhs,
-        }
-    }
-}
-
-impl<T> NonZero<T>
-where
-    T: Uint,
-{
-    /// Returns a new NonZero<T> if `value` is non-zero, else None
-    pub fn new(value: T) -> Option<Self> {
-        if value.is_zero() {
-            None
-        } else {
-            Some(Self { value })
-        }
-    }
-
-    pub fn is_even(&self) -> bool {
-        self.value.is_even()
-    }
-    pub fn is_odd(&self) -> bool {
-        self.value.is_odd()
-    }
-}
-
-impl<T: Uint> Add for NonZero<T> {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self::Output {
-        Self {
-            value: self.value.clone() + rhs.value.clone(),
-        }
-    }
-}
-
-impl<T: Uint> Sub for NonZero<T> {
-    type Output = Self;
-    #[cfg(debug_assertions)]
-    fn sub(self, rhs: Self) -> Self::Output {
-        if self < rhs {
-            panic!("{self:?} - {rhs:?} produces an underflow or value equal to zero");
-        }
-
-        Self {
-            value: self.value.clone() - rhs.value.clone(),
-        }
-    }
-
-    #[cfg(not(debug_assertions))]
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self {
-            value: self.value.clone() - rhs.value.clone(),
-        }
-    }
-}
-
-impl<T: Uint> Mul for NonZero<T> {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self {
-            value: (self.value.clone() * rhs.value.clone()),
-        }
-    }
-}
-
-impl<T: Uint> Div for NonZero<T> {
-    type Output = Self;
-
-    #[cfg(debug_assertions)]
-    fn div(self, rhs: Self) -> Self::Output {
-        if self < rhs {
-            panic!("{self:?} / {rhs:?} produces an underflow or value equal to zero");
-        }
-
-        Self {
-            value: self.value.clone() / rhs.value.clone(),
-        }
-    }
-
-    #[cfg(not(debug_assertions))]
-    fn div(self, rhs: Self) -> Self::Output {
-        Self {
-            value: self.value.clone() / rhs.value.clone(),
-        }
-    }
-}
-
-impl<T: Uint> Pow<u32> for NonZero<T> {
-    type Output = Self;
-    fn pow(self, rhs: u32) -> Self::Output {
-        Self {
-            value: self.value.clone().pow(rhs),
-        }
-    }
-}
-
-impl<T: Uint> AddAssign for NonZero<T> {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = self.clone() + rhs
-    }
-}
-
-impl<T: Uint> SubAssign for NonZero<T> {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = self.clone() - rhs
-    }
-}
-
-impl<T: Uint> MulAssign for NonZero<T> {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = self.clone() * rhs
-    }
-}
-
-impl<T: Uint> DivAssign for NonZero<T> {
-    fn div_assign(&mut self, rhs: Self) {
-        *self = self.clone() / rhs
-    }
-}
-
 impl<T: Uint> One for NonZero<T> {
     fn one() -> Self {
         Self { value: T::one() }
+    }
+}
+
+pub mod ops {
+    use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+
+    use num::{traits::Pow, BigUint, PrimInt};
+
+    use crate::{traits::Uint, NonZero};
+
+    // NonZero<u*> Primitive impl's
+    impl<T: Uint + PrimInt> NonZero<T> {
+        pub fn trailing_zeros(&self) -> u64 {
+            self.value.trailing_zeros().into()
+        }
+
+        pub fn leading_zeros(&self) -> u64 {
+            self.value.leading_zeros().into()
+        }
+
+        pub fn trailing_ones(&self) -> u64 {
+            self.value.trailing_ones().into()
+        }
+
+        pub fn leading_ones(&self) -> u64 {
+            self.value.leading_ones().into()
+        }
+
+        pub fn shift_right(&self, rhs: usize) -> Self {
+            Self {
+                value: self.value >> rhs,
+            }
+        }
+        pub fn shift_left(&self, rhs: usize) -> Self {
+            Self {
+                value: self.value << rhs,
+            }
+        }
+    }
+
+    // NonZero<BigUint> impls
+    impl NonZero<BigUint> {
+        pub fn trailing_zeros(&self) -> u64 {
+            self.value.trailing_zeros()
+        }
+
+        pub fn leading_zeros(&self) -> u64 {
+            self.value.leading_zeros().into()
+        }
+
+        pub fn trailing_ones(&self) -> u64 {
+            self.value.trailing_ones().into()
+        }
+
+        pub fn leading_ones(&self) -> u64 {
+            self.value.leading_ones().into()
+        }
+
+        pub fn shift_right(&self, rhs: usize) -> Self {
+            Self {
+                value: self.value >> rhs,
+            }
+        }
+        pub fn shift_left(&self, rhs: usize) -> Self {
+            Self {
+                value: self.value << rhs,
+            }
+        }
+    }
+
+    impl<T: Uint> NonZero<T> {
+        /// Returns a new NonZero<T> if `value` is non-zero, else None
+        pub fn new(value: T) -> Option<Self> {
+            if value.is_zero() {
+                None
+            } else {
+                Some(Self { value })
+            }
+        }
+
+        pub fn is_even(&self) -> bool {
+            self.value.is_even()
+        }
+        pub fn is_odd(&self) -> bool {
+            self.value.is_odd()
+        }
+    }
+
+    impl<T: Uint> Add for NonZero<T> {
+        type Output = Self;
+        fn add(self, rhs: Self) -> Self::Output {
+            Self {
+                value: self.value.clone() + rhs.value.clone(),
+            }
+        }
+    }
+
+    impl<T: Uint> Sub for NonZero<T> {
+        type Output = Self;
+        #[cfg(debug_assertions)]
+        fn sub(self, rhs: Self) -> Self::Output {
+            if self < rhs {
+                panic!("{self:?} - {rhs:?} produces an underflow or value equal to zero");
+            }
+
+            Self {
+                value: self.value.clone() - rhs.value.clone(),
+            }
+        }
+
+        #[cfg(not(debug_assertions))]
+        fn sub(self, rhs: Self) -> Self::Output {
+            Self {
+                value: self.value.clone() - rhs.value.clone(),
+            }
+        }
+    }
+
+    impl<T: Uint> Mul for NonZero<T> {
+        type Output = Self;
+
+        fn mul(self, rhs: Self) -> Self::Output {
+            Self {
+                value: (self.value.clone() * rhs.value.clone()),
+            }
+        }
+    }
+
+    impl<T: Uint> Div for NonZero<T> {
+        type Output = Self;
+
+        #[cfg(debug_assertions)]
+        fn div(self, rhs: Self) -> Self::Output {
+            if self < rhs {
+                panic!("{self:?} / {rhs:?} produces an underflow or value equal to zero");
+            }
+
+            Self {
+                value: self.value.clone() / rhs.value.clone(),
+            }
+        }
+
+        #[cfg(not(debug_assertions))]
+        fn div(self, rhs: Self) -> Self::Output {
+            Self {
+                value: self.value.clone() / rhs.value.clone(),
+            }
+        }
+    }
+
+    impl<T: Uint> Pow<u32> for NonZero<T> {
+        type Output = Self;
+        fn pow(self, rhs: u32) -> Self::Output {
+            Self {
+                value: self.value.clone().pow(rhs),
+            }
+        }
+    }
+
+    impl<T: Uint> AddAssign for NonZero<T> {
+        fn add_assign(&mut self, rhs: Self) {
+            *self = self.clone() + rhs
+        }
+    }
+
+    impl<T: Uint> SubAssign for NonZero<T> {
+        fn sub_assign(&mut self, rhs: Self) {
+            *self = self.clone() - rhs
+        }
+    }
+
+    impl<T: Uint> MulAssign for NonZero<T> {
+        fn mul_assign(&mut self, rhs: Self) {
+            *self = self.clone() * rhs
+        }
+    }
+
+    impl<T: Uint> DivAssign for NonZero<T> {
+        fn div_assign(&mut self, rhs: Self) {
+            *self = self.clone() / rhs
+        }
     }
 }
 

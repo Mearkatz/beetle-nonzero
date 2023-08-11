@@ -3,10 +3,10 @@ name = "beetle-nonzero"
 version = "0.3.0"
 edition = "2021"
 authors = ["beetle"]
-description = "What if the built-in NonZero types were generic"
+description = "The standard library's NonZeroU* types into a single struct"
 license = "MIT"
+repository = "https://github.com/Mearkatz/beetle-nonzero"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 num = "0.4.0"
