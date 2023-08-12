@@ -9,3 +9,23 @@ impl Uint for u64 {}
 impl Uint for u128 {}
 impl Uint for usize {}
 impl Uint for BigUint {}
+
+pub trait TrailingZeros {
+    /// Returns the number of trailing zeros in the binary representation of the nonzero integer
+    fn trailing_zeros(&self) -> u64;
+}
+
+pub trait LeadingZeros {
+    /// Returns the number of leading zeros in the binary representation of the nonzero integer
+    fn leading_zeros(&self) -> u64;
+}
+
+pub trait TrailingOnes {
+    /// Returns the number of trailing ones in the binary representation of the nonzero integer
+    fn trailing_ones(&self) -> u64;
+}
+
+pub trait LeadingOnes {
+    /// Returns the number of leading ones in the binary representation of the nonzero integer
+    fn leading_ones(&self) -> u64;
+}

@@ -1,6 +1,6 @@
 [package]
 name = "beetle-nonzero"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 authors = ["beetle"]
 description = "The standard library's NonZeroU* types into a single struct"

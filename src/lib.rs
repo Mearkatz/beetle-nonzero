@@ -11,6 +11,8 @@ pub struct NonZero<T: Uint> {
     value: T,
 }
 
+impl<T> Copy for NonZero<T> where T: Copy + Clone + Uint {}
+
 impl<T: Uint> NonZero<T> {
     /// Returns a new NonZero<T> if `value` is non-zero, else None
     pub fn new(value: T) -> Option<Self> {
@@ -57,32 +59,34 @@ pub mod ops {
 
     use num::{traits::Pow, BigUint};
 
-    use crate::{traits::Uint, NonZero};
+    use crate::{traits::*, NonZero};
 
     // NonZero<u*> Primitive impl's
 
     /// Generates an impl block for the trailing(or leading) ones(or zeros) methods
     macro_rules! impl_ones_and_zeros {
         ($name: ty) => {
-            impl $name {
-                /// The number of trailing zeros in the binary representation of the integer
-                pub fn trailing_zeros(&self) -> u64 {
-                    self.value.clone().trailing_zeros().into()
+            impl TrailingZeros for $name {
+                fn trailing_zeros(&self) -> u64 {
+                    self.value.trailing_zeros().into()
                 }
+            }
 
-                /// The number of leading zeros in the binary representation of the integer
-                pub fn leading_zeros(&self) -> u64 {
-                    self.value.clone().leading_zeros().into()
+            impl TrailingOnes for $name {
+                fn trailing_ones(&self) -> u64 {
+                    self.value.trailing_ones().into()
                 }
+            }
 
-                /// The number of trailing ones in the binary representation of the integer
-                pub fn trailing_ones(&self) -> u64 {
-                    self.value.clone().trailing_ones().into()
+            impl LeadingZeros for $name {
+                fn leading_zeros(&self) -> u64 {
+                    self.value.leading_zeros().into()
                 }
+            }
 
-                /// The number of leading ones in the binary representation of the integer
-                pub fn leading_ones(&self) -> u64 {
-                    self.value.clone().leading_ones().into()
+            impl LeadingOnes for $name {
+                fn leading_ones(&self) -> u64 {
+                    self.value.leading_ones().into()
                 }
             }
         };
@@ -96,14 +100,14 @@ pub mod ops {
     impl_ones_and_zeros!(NonZero<usize>);
 
     // For reasons I'm unaware, BigUint does not have leading_ones or leading_zeros methods, so we must leave them out
-    impl NonZero<BigUint> {
-        #[doc = " The number of trailing zeros in the binary representation of the integer"]
-        pub fn trailing_zeros(&self) -> u64 {
-            self.value.clone().trailing_zeros().unwrap_or(0)
+    impl TrailingZeros for NonZero<BigUint> {
+        fn trailing_zeros(&self) -> u64 {
+            self.value.trailing_zeros().unwrap_or(0)
         }
-        #[doc = " The number of trailing ones in the binary representation of the integer"]
-        pub fn trailing_ones(&self) -> u64 {
-            self.value.clone().trailing_ones()
+    }
+    impl TrailingOnes for NonZero<BigUint> {
+        fn trailing_ones(&self) -> u64 {
+            self.value.trailing_ones()
         }
     }
 
@@ -272,9 +276,9 @@ mod tests {
         let three: NonZero<u8> = NonZero::new(3u8).unwrap();
 
         // + - * /
-        assert_eq!(one.clone() + two.clone(), three.clone());
-        assert_eq!(three.clone() - two.clone(), one.clone());
-        assert_eq!(two.clone() * one.clone(), two.clone());
+        assert_eq!(one + two, three);
+        assert_eq!(three - two, one);
+        assert_eq!(two * one, two);
         assert_eq!(three / two, one);
     }
 
