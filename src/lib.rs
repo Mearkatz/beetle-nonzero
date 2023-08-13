@@ -118,7 +118,7 @@ pub mod ops {
                 type Output = Self;
                 fn shl(self, rhs: Self) -> Self::Output {
                     Self {
-                        value: self.value.clone() << rhs.value.clone(),
+                        value: self.value << rhs.value,
                     }
                 }
             }
@@ -126,7 +126,7 @@ pub mod ops {
                 type Output = Self;
                 fn shr(self, rhs: Self) -> Self::Output {
                     Self {
-                        value: self.value.clone() >> rhs.value.clone(),
+                        value: self.value >> rhs.value,
                     }
                 }
             }
@@ -163,6 +163,32 @@ pub mod ops {
             Self {
                 value: self.value.clone() >> rhs,
             }
+        }
+    }
+
+    macro_rules! impl_primitive_without_trailing_zeros {
+        ($name: ty) => {
+            impl WithoutTrailingZeros for NonZero<$name> {
+                fn without_trailing_zeros(&self) -> Self {
+                    Self {
+                        value: self.value >> self.value.trailing_zeros(),
+                    }
+                }
+            }
+        };
+    }
+
+    impl_primitive_without_trailing_zeros!(u8);
+    impl_primitive_without_trailing_zeros!(u16);
+    impl_primitive_without_trailing_zeros!(u32);
+    impl_primitive_without_trailing_zeros!(u64);
+    impl_primitive_without_trailing_zeros!(u128);
+    impl_primitive_without_trailing_zeros!(usize);
+
+    impl WithoutTrailingZeros for NonZero<BigUint> {
+        fn without_trailing_zeros(&self) -> Self {
+            let value = self.value.clone() >> self.trailing_zeros();
+            Self { value }
         }
     }
 
@@ -264,9 +290,12 @@ pub mod ops {
 
 #[allow(unused_imports)]
 mod tests {
-    use num::One;
-
-    use crate::ranges::RangeNonZero;
+    use crate::{
+        ranges::RangeNonZero,
+        traits::{WithoutTrailingZeros, *},
+        NonZero,
+    };
+    use num::{BigUint, FromPrimitive, One};
 
     #[test]
     fn ops_work() {
@@ -283,11 +312,66 @@ mod tests {
     }
 
     #[test]
+    fn without_trailing_zeros_works() {
+        let x = NonZero::new(166_u8).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83);
+
+        let x = NonZero::new(166_u16).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83);
+
+        let x = NonZero::new(166_u32).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83);
+
+        let x = NonZero::new(166_u64).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83);
+
+        let x = NonZero::new(166_u128).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83);
+
+        let x = NonZero::new(166_usize).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83);
+
+        let x = NonZero::new(BigUint::from(166u8)).unwrap();
+        assert_eq!(x.without_trailing_zeros().value, 83u8.into());
+
+        assert!(NonZero::new(128u8)
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+
+        assert!(NonZero::new(128u16)
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+        assert!(NonZero::new(128u32)
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+        assert!(NonZero::new(128u64)
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+        assert!(NonZero::new(128u128)
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+        assert!(NonZero::new(128usize)
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+
+        assert!(NonZero::new(BigUint::from(128u8))
+            .unwrap()
+            .without_trailing_zeros()
+            .is_one());
+    }
+
+    #[test]
     fn ranges_work() {
-        let _ = RangeNonZero::from_primitives(1u8, 10u8).unwrap();
-        let _ = RangeNonZero::from_primitives(1u16, 10u16).unwrap();
-        let _ = RangeNonZero::from_primitives(1u32, 10u32).unwrap();
-        let _ = RangeNonZero::from_primitives(1u64, 10u64).unwrap();
-        let _ = RangeNonZero::from_primitives(1u128, 10u128).unwrap();
+        let _: RangeNonZero<u8> = RangeNonZero::from_primitives(1u8, 10u8).unwrap();
+        let _: RangeNonZero<u16> = RangeNonZero::from_primitives(1u16, 10u16).unwrap();
+        let _: RangeNonZero<u32> = RangeNonZero::from_primitives(1u32, 10u32).unwrap();
+        let _: RangeNonZero<u64> = RangeNonZero::from_primitives(1u64, 10u64).unwrap();
+        let _: RangeNonZero<u128> = RangeNonZero::from_primitives(1u128, 10u128).unwrap();
     }
 }

@@ -29,3 +29,7 @@ pub trait LeadingOnes {
     /// Returns the number of leading ones in the binary representation of the nonzero integer
     fn leading_ones(&self) -> u64;
 }
+
+pub trait WithoutTrailingZeros: TrailingZeros {
+    fn without_trailing_zeros(&self) -> Self;
+}
