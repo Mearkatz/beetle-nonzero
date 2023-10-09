@@ -33,8 +33,4 @@ pub trait LeadingOnes {
 pub trait WithoutTrailingZeros: TrailingZeros {
     /// Returns the number with its trailing zeros removed
     fn without_trailing_zeros(&self) -> Self;
-
-    /// Returns the number with its trailing zeros removed.
-    /// May potentially be faster ?
-    fn without_trailing_zeros_unchecked(&self) -> Self;
 }

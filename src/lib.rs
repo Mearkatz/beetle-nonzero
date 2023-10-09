@@ -29,6 +29,19 @@ impl<T: Uint> NonZero<T> {
     pub fn is_odd(&self) -> bool {
         self.value.is_odd()
     }
+
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+
+    // Sets the internal value of the nonzero integer.
+    // If the value equals zero, this panics.
+    pub fn set_value(&mut self, value: T) {
+        if value.is_zero() {
+            panic!("Cannot set a NonZero's value to zero");
+        }
+        self.value = value;
+    }
 }
 
 macro_rules! impl_from_primitive {
@@ -173,12 +186,6 @@ pub mod ops {
                     let value = self.value >> self.value.trailing_zeros();
                     Self { value }
                 }
-
-                fn without_trailing_zeros_unchecked(&self) -> Self {
-                    let tz = self.value.trailing_zeros();
-                    let value = unsafe { self.value.unchecked_shr(tz) };
-                    Self { value }
-                }
             }
         };
     }
@@ -194,11 +201,6 @@ pub mod ops {
         fn without_trailing_zeros(&self) -> Self {
             let value = self.value.clone() >> self.trailing_zeros();
             Self { value }
-        }
-
-        fn without_trailing_zeros_unchecked(&self) -> Self {
-            // Used because biguint doesn't implement unchecked_shr
-            self.without_trailing_zeros()
         }
     }
 
