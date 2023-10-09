@@ -170,9 +170,14 @@ pub mod ops {
         ($name: ty) => {
             impl WithoutTrailingZeros for NonZero<$name> {
                 fn without_trailing_zeros(&self) -> Self {
-                    Self {
-                        value: self.value >> self.value.trailing_zeros(),
-                    }
+                    let value = self.value >> self.value.trailing_zeros();
+                    Self { value }
+                }
+
+                fn without_trailing_zeros_unchecked(&self) -> Self {
+                    let tz = self.value.trailing_zeros();
+                    let value = unsafe { self.value.unchecked_shr(tz) };
+                    Self { value }
                 }
             }
         };
@@ -189,6 +194,11 @@ pub mod ops {
         fn without_trailing_zeros(&self) -> Self {
             let value = self.value.clone() >> self.trailing_zeros();
             Self { value }
+        }
+
+        fn without_trailing_zeros_unchecked(&self) -> Self {
+            // Used because biguint doesn't implement unchecked_shr
+            self.without_trailing_zeros()
         }
     }
 
