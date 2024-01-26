@@ -1,4 +1,4 @@
-//! A generic form of the `NonZeroU*` and `NonZeroI*` types from the standard library.
+//! Combines the Rust standard library's `NonZero` types into a single struct
 
 use num::{Integer, PrimInt};
 use std::{
@@ -54,6 +54,14 @@ impl<T: Integer> NonZero<T> {
     /// Will panic if the value provided equals zero
     pub fn set_value(&mut self, value: T) {
         assert!(!value.is_zero(), "Cannot set a NonZero's value to zero");
+        unsafe { self.set_value_unchecked(value) }
+    }
+
+    /// Sets the internal value of the nonzero integer.
+    /// If the value equals zero, this panics.
+    /// # Safety
+    /// `value` must be known to be nonzero
+    pub unsafe fn set_value_unchecked(&mut self, value: T) {
         self.value = value;
     }
 }

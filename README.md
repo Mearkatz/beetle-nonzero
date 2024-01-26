@@ -1,1 +1,1 @@
-Combines the standard NonZeroU* types into a single struct
+Combines the Rust standard library's `NonZero` types into a single struct
