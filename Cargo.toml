@@ -3,7 +3,7 @@ name = "beetle-nonzero"
 version = "0.3.5"
 edition = "2021"
 authors = ["beetle"]
-description = "Combines the Rust standard library's `NonZero` types into a single struct"
+description = "Combines the std `NonZero` structs into one struct"
 license = "MIT"
 repository = "https://github.com/Mearkatz/beetle-nonzero"
 

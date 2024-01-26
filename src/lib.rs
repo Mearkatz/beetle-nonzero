@@ -1,10 +1,11 @@
 //! Combines the Rust standard library's `NonZero` types into a single struct
 
-use num::{Integer, PrimInt};
 use std::{
     fmt::Display,
     num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize},
 };
+
+use num::Integer;
 
 /// An integer that is known to not equal zero.
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
@@ -63,17 +64,6 @@ impl<T: Integer> NonZero<T> {
     /// `value` must be known to be nonzero
     pub unsafe fn set_value_unchecked(&mut self, value: T) {
         self.value = value;
-    }
-}
-
-impl<T: PrimInt + Integer> NonZero<T> {
-    /// Whether the nonzero integer is even
-    pub fn is_even(&self) -> bool {
-        self.value.is_even()
-    }
-    /// Whether the nonzero integer is odd
-    pub fn is_odd(&self) -> bool {
-        self.value.is_odd()
     }
 }
 
