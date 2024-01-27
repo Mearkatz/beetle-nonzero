@@ -5,36 +5,41 @@ use std::{
     num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize},
 };
 
-use num::Integer;
+use num::{Integer, PrimInt};
+use parity_map::{Parity, ParityMap};
 
 /// An integer that is known to not equal zero.
-#[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
-pub struct NonZero<T: Integer> {
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
+pub struct NonZero<T: PrimInt + Integer> {
     value: T,
 }
 
-impl<T: Integer + Clone + Display> Display for NonZero<T> {
+impl<T> Display for NonZero<T>
+where
+    T: PrimInt + Integer + Display,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.get())
     }
 }
 
-impl<T> Copy for NonZero<T> where T: Integer + Copy {}
-
-impl<T: Integer + Clone> NonZero<T> {
-    /// A copy of the nonzero value.
-    /// # Performance    
-    /// May be expensive if `T` doesn't implement `Copy`
-    pub fn get(&self) -> T {
-        self.value.clone()
+impl<T> ParityMap for NonZero<T>
+where
+    T: PrimInt + Integer,
+{
+    fn parity(&self) -> Parity {
+        if self.is_even() {
+            Parity::Even
+        } else {
+            Parity::Odd
+        }
     }
 }
 
-impl<T: Integer> NonZero<T> {
+impl<T: PrimInt + Integer> NonZero<T> {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
-        let nonzero = !value.is_zero();
-        nonzero.then(|| unsafe { Self::new_unchecked(value) })
+        (!value.is_zero()).then(|| unsafe { Self::new_unchecked(value) })
     }
 
     /// Returns a new `NonZero` without checking that the provided value is nonzero.
@@ -47,6 +52,16 @@ impl<T: Integer> NonZero<T> {
     /// A reference to the nonzero value
     pub const fn get_ref(&self) -> &T {
         &self.value
+    }
+
+    /// Whether the nonzero integer is even
+    pub fn is_even(&self) -> bool {
+        self.get_ref().is_even()
+    }
+
+    /// Whether the nonzero integer is odd
+    pub fn is_odd(&self) -> bool {
+        self.get_ref().is_odd()
     }
 
     /// Sets the internal value of the nonzero integer.
@@ -64,6 +79,26 @@ impl<T: Integer> NonZero<T> {
     /// `value` must be known to be nonzero
     pub unsafe fn set_value_unchecked(&mut self, value: T) {
         self.value = value;
+    }
+
+    /// A copy of the nonzero value.
+    /// # Performance    
+    /// May be expensive if `T` doesn't implement `Copy`
+    pub const fn get(&self) -> T {
+        self.value
+    }
+
+    /// Applies a function to the inner value and returns a `NonZero` if the result was nonzero.
+    pub fn map(&self, f: fn(T) -> T) -> Option<Self> {
+        Self::new(f(self.get()))
+    }
+
+    /// Applies a function to the inner value and returns a `NonZero` if the result was nonzero.
+    /// # Safety
+    /// `f` must return a nonzero integer
+    #[must_use]
+    pub unsafe fn map_unchecked(&self, f: fn(T) -> T) -> Self {
+        Self::new_unchecked(f(self.get()))
     }
 }
 
