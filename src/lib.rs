@@ -3,10 +3,10 @@
 use std::{
     fmt::Display,
     num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize},
+    ops::Shr,
 };
 
 use num::{Integer, PrimInt};
-use parity_map::{Parity, ParityMap};
 
 /// An integer that is known to not equal zero.
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
@@ -23,23 +23,13 @@ where
     }
 }
 
-impl<T> ParityMap for NonZero<T>
+impl<T> NonZero<T>
 where
     T: PrimInt + Integer,
 {
-    fn parity(&self) -> Parity {
-        if self.is_even() {
-            Parity::Even
-        } else {
-            Parity::Odd
-        }
-    }
-}
-
-impl<T: PrimInt + Integer> NonZero<T> {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
-        (!value.is_zero()).then(|| unsafe { Self::new_unchecked(value) })
+        (!value.is_zero()).then_some(Self { value })
     }
 
     /// Returns a new `NonZero` without checking that the provided value is nonzero.
@@ -55,12 +45,12 @@ impl<T: PrimInt + Integer> NonZero<T> {
     }
 
     /// Whether the nonzero integer is even
-    pub fn is_even(&self) -> bool {
-        self.get_ref().is_even()
+    pub fn is_even(self) -> bool {
+        self.get().is_even()
     }
 
     /// Whether the nonzero integer is odd
-    pub fn is_odd(&self) -> bool {
+    pub fn is_odd(self) -> bool {
         self.get_ref().is_odd()
     }
 
@@ -84,12 +74,12 @@ impl<T: PrimInt + Integer> NonZero<T> {
     /// A copy of the nonzero value.
     /// # Performance    
     /// May be expensive if `T` doesn't implement `Copy`
-    pub const fn get(&self) -> T {
+    pub const fn get(self) -> T {
         self.value
     }
 
     /// Applies a function to the inner value and returns a `NonZero` if the result was nonzero.
-    pub fn map(&self, f: fn(T) -> T) -> Option<Self> {
+    pub fn map(self, f: fn(T) -> T) -> Option<Self> {
         Self::new(f(self.get()))
     }
 
@@ -97,8 +87,24 @@ impl<T: PrimInt + Integer> NonZero<T> {
     /// # Safety
     /// `f` must return a nonzero integer
     #[must_use]
-    pub unsafe fn map_unchecked(&self, f: fn(T) -> T) -> Self {
+    pub unsafe fn map_unchecked(self, f: fn(T) -> T) -> Self {
         Self::new_unchecked(f(self.get()))
+    }
+
+    /// Returns the number of trailing zeros in the binary representation of the nonzero integer
+    pub fn trailing_zeros(self) -> u32 {
+        self.get().trailing_zeros()
+    }
+}
+
+impl<T> NonZero<T>
+where
+    T: PrimInt + Integer + Shr<u32, Output = T>,
+{
+    /// Returns the number of trailing zeros in the binary representation of the nonzero integer
+    #[must_use]
+    pub fn without_trailing_zeros(self) -> Self {
+        unsafe { Self::new_unchecked(self.get() >> self.get().trailing_zeros()) }
     }
 }
 

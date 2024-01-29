@@ -1,6 +1,6 @@
 [package]
 name = "beetle-nonzero"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2021"
 authors = ["beetle"]
 description = "Combines the std `NonZero` structs into one struct"
@@ -21,4 +21,3 @@ expect_used = "deny"
 [dependencies]
 default-impl = "0.1.0"
 num = "0.4.0"
-parity-map = "0.1.0"
