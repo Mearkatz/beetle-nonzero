@@ -53,6 +53,12 @@ where
     pub const unsafe fn new_unchecked(value: T) -> Self {
         Self { value }
     }
+
+    /// A copy of the nonzero value
+    pub const fn get(self) -> T {
+        self.value
+    }
+
     /// Whether the nonzero integer is even
     pub fn is_even(self) -> bool {
         self.value.is_even()
