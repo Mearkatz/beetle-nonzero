@@ -8,6 +8,21 @@ use std::{
 
 use num::{Integer, PrimInt};
 
+/// Gives access to convenient methods for casting to `NonZero` or checking if you can.
+pub trait NotZero: PrimInt + Integer {
+    /// Shorthand for `!self.is_zero()`
+    fn not_zero(self) -> bool {
+        !self.is_zero()
+    }
+
+    /// Shorthand for `NonZero::new(self)`
+    fn to_nonzero(self) -> Option<NonZero<Self>> {
+        NonZero::new(self)
+    }
+}
+
+impl<T> NotZero for T where T: PrimInt + Integer {}
+
 /// An integer that is known to not equal zero.
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub struct NonZero<T: PrimInt + Integer> {
@@ -19,7 +34,7 @@ where
     T: PrimInt + Integer + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.get())
+        write!(f, "{}", self.value)
     }
 }
 
@@ -29,7 +44,7 @@ where
 {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
-        (!value.is_zero()).then_some(Self { value })
+        value.not_zero().then_some(Self { value })
     }
 
     /// Returns a new `NonZero` without checking that the provided value is nonzero.
@@ -38,49 +53,37 @@ where
     pub const unsafe fn new_unchecked(value: T) -> Self {
         Self { value }
     }
-
-    /// A reference to the nonzero value
-    pub const fn get_ref(&self) -> &T {
-        &self.value
-    }
-
     /// Whether the nonzero integer is even
     pub fn is_even(self) -> bool {
-        self.get().is_even()
+        self.value.is_even()
     }
 
     /// Whether the nonzero integer is odd
     pub fn is_odd(self) -> bool {
-        self.get_ref().is_odd()
+        self.value.is_odd()
     }
 
-    /// Sets the internal value of the nonzero integer.
-    /// If the value equals zero, this panics.
-    /// # Panics
-    /// Will panic if the value provided equals zero
-    pub fn set_value(&mut self, value: T) {
-        assert!(!value.is_zero(), "Cannot set a NonZero's value to zero");
-        unsafe { self.set_value_unchecked(value) }
+    /// Sets `self.value` using the provided value.
+    /// Only succeeds if the value provided was nonzero.
+    /// Returns whether the operation succeeded.
+    pub fn set(&mut self, value: T) -> bool {
+        if value.not_zero() {
+            unsafe { self.set_unchecked(value) }
+        }
+        value.not_zero()
     }
 
     /// Sets the internal value of the nonzero integer.
     /// If the value equals zero, this panics.
     /// # Safety
     /// `value` must be known to be nonzero
-    pub unsafe fn set_value_unchecked(&mut self, value: T) {
+    pub unsafe fn set_unchecked(&mut self, value: T) {
         self.value = value;
     }
 
-    /// A copy of the nonzero value.
-    /// # Performance    
-    /// May be expensive if `T` doesn't implement `Copy`
-    pub const fn get(self) -> T {
-        self.value
-    }
-
     /// Applies a function to the inner value and returns a `NonZero` if the result was nonzero.
-    pub fn map(self, f: fn(T) -> T) -> Option<Self> {
-        Self::new(f(self.get()))
+    pub fn map(self, f: impl Fn(T) -> T) -> Option<Self> {
+        Self::new(f(self.value))
     }
 
     /// Applies a function to the inner value and returns a `NonZero` if the result was nonzero.
@@ -88,12 +91,12 @@ where
     /// `f` must return a nonzero integer
     #[must_use]
     pub unsafe fn map_unchecked(self, f: fn(T) -> T) -> Self {
-        Self::new_unchecked(f(self.get()))
+        Self::new_unchecked(f(self.value))
     }
 
     /// Returns the number of trailing zeros in the binary representation of the nonzero integer
     pub fn trailing_zeros(self) -> u32 {
-        self.get().trailing_zeros()
+        self.value.trailing_zeros()
     }
 }
 
@@ -104,7 +107,7 @@ where
     /// Returns the number of trailing zeros in the binary representation of the nonzero integer
     #[must_use]
     pub fn without_trailing_zeros(self) -> Self {
-        unsafe { Self::new_unchecked(self.get() >> self.get().trailing_zeros()) }
+        unsafe { Self::new_unchecked(self.value >> self.trailing_zeros()) }
     }
 }
 
