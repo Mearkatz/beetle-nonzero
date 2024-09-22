@@ -1,23 +1,24 @@
 [package]
 name = "beetle-nonzero"
-version = "0.3.9"
+version = "0.3.10"
 edition = "2021"
 authors = ["beetle"]
 description = "Combines the std `NonZero` structs into one struct"
 license = "MIT"
 repository = "https://github.com/Mearkatz/beetle-nonzero"
 
+
 [lints.rust]
-missing_docs = "deny"
+missing_docs = { level = "deny", priority = -1 }
 
 [lints.clippy]
-enum_glob_use = "deny"
-pedantic = "deny"
-nursery = "deny"
-unwrap_used = "deny"
-expect_used = "deny"
+enum_glob_use = { level = "deny", priority = -3 }
+pedantic = { level = "deny", priority = -4 }
+nursery = { level = "deny", priority = -5 }
+unwrap_used = { level = "deny", priority = -6 }
+expect_used = { level = "deny", priority = -7 }
 
 
 [dependencies]
 default-impl = "0.1.0"
-num = "0.4.0"
+num = "0.4.3"

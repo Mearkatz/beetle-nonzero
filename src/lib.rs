@@ -8,30 +8,15 @@ use std::{
 
 use num::{Integer, PrimInt};
 
-/// Gives access to convenient methods for casting to `NonZero` or checking if you can.
-pub trait NotZero: PrimInt + Integer {
-    /// Shorthand for `!self.is_zero()`
-    fn not_zero(self) -> bool {
-        !self.is_zero()
-    }
-
-    /// Shorthand for `NonZero::new(self)`
-    fn to_nonzero(self) -> Option<NonZero<Self>> {
-        NonZero::new(self)
-    }
-}
-
-impl<T> NotZero for T where T: PrimInt + Integer {}
-
 /// An integer that is known to not equal zero.
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
-pub struct NonZero<T: PrimInt + Integer> {
+pub struct NonZero<T> {
     value: T,
 }
 
 impl<T> Display for NonZero<T>
 where
-    T: PrimInt + Integer + Display,
+    T: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
@@ -44,7 +29,11 @@ where
 {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
-        value.not_zero().then_some(Self { value })
+        if value.is_zero() {
+            None
+        } else {
+            Some(unsafe { Self::new_unchecked(value) })
+        }
     }
 
     /// Returns a new `NonZero` without checking that the provided value is nonzero.
@@ -73,10 +62,12 @@ where
     /// Only succeeds if the value provided was nonzero.
     /// Returns whether the operation succeeded.
     pub fn set(&mut self, value: T) -> bool {
-        if value.not_zero() {
+        if value.is_zero() {
             unsafe { self.set_unchecked(value) }
+            false
+        } else {
+            true
         }
-        value.not_zero()
     }
 
     /// Sets the internal value of the nonzero integer.
@@ -96,7 +87,7 @@ where
     /// # Safety
     /// `f` must return a nonzero integer
     #[must_use]
-    pub unsafe fn map_unchecked(self, f: fn(T) -> T) -> Self {
+    pub unsafe fn map_unchecked(self, f: impl Fn(T) -> T) -> Self {
         Self::new_unchecked(f(self.value))
     }
 
