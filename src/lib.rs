@@ -3,7 +3,7 @@
 use std::{
     fmt::Display,
     num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize},
-    ops::Shr,
+    ops::{Not, Shr},
 };
 
 use num::{Integer, PrimInt};
@@ -23,19 +23,7 @@ where
     }
 }
 
-impl<T> NonZero<T>
-where
-    T: PrimInt + Integer,
-{
-    /// Returns a new `NonZero<T>` if `value` is nonzero
-    pub fn new(value: T) -> Option<Self> {
-        if value.is_zero() {
-            None
-        } else {
-            Some(unsafe { Self::new_unchecked(value) })
-        }
-    }
-
+impl<T> NonZero<T> {
     /// Returns a new `NonZero` without checking that the provided value is nonzero.
     /// # Safety
     /// `value` must be known to be nonzero
@@ -44,8 +32,18 @@ where
     }
 
     /// A copy of the nonzero value
-    pub const fn get(self) -> T {
-        self.value
+    pub const fn get(&self) -> &T {
+        &self.value
+    }
+}
+
+impl<T> NonZero<T>
+where
+    T: Integer,
+{
+    /// Returns a new `NonZero<T>` if `value` is nonzero
+    pub fn new(value: T) -> Option<Self> {
+        value.is_zero().not().then_some(Self { value })
     }
 
     /// Whether the nonzero integer is even
@@ -62,12 +60,11 @@ where
     /// Only succeeds if the value provided was nonzero.
     /// Returns whether the operation succeeded.
     pub fn set(&mut self, value: T) -> bool {
-        if value.is_zero() {
+        let nz = value.is_zero().not();
+        if nz {
             unsafe { self.set_unchecked(value) }
-            false
-        } else {
-            true
         }
+        nz
     }
 
     /// Sets the internal value of the nonzero integer.
@@ -90,17 +87,17 @@ where
     pub unsafe fn map_unchecked(self, f: impl Fn(T) -> T) -> Self {
         Self::new_unchecked(f(self.value))
     }
-
-    /// Returns the number of trailing zeros in the binary representation of the nonzero integer
-    pub fn trailing_zeros(self) -> u32 {
-        self.value.trailing_zeros()
-    }
 }
 
 impl<T> NonZero<T>
 where
-    T: PrimInt + Integer + Shr<u32, Output = T>,
+    T: PrimInt + Shr<u32, Output = T>,
 {
+    /// Returns the number of trailing zeros in the binary representation of the nonzero integer
+    pub fn trailing_zeros(self) -> u32 {
+        self.value.trailing_zeros()
+    }
+
     /// Returns the number of trailing zeros in the binary representation of the nonzero integer
     #[must_use]
     pub fn without_trailing_zeros(self) -> Self {
