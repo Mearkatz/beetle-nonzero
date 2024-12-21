@@ -6,7 +6,7 @@ use std::{
     ops::{Not, Shr},
 };
 
-use num::{Integer, PrimInt};
+use num::{Integer, PrimInt, Zero};
 
 /// An integer that is known to not equal zero.
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
@@ -39,13 +39,18 @@ impl<T> NonZero<T> {
 
 impl<T> NonZero<T>
 where
-    T: Integer,
+    T: Zero,
 {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
         value.is_zero().not().then_some(Self { value })
     }
+}
 
+impl<T> NonZero<T>
+where
+    T: Integer,
+{
     /// Whether the nonzero integer is even
     pub fn is_even(self) -> bool {
         self.value.is_even()
