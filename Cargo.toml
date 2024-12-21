@@ -1,6 +1,6 @@
 [package]
 name = "beetle-nonzero"
-version = "0.3.11"
+version = "0.3.12"
 edition = "2021"
 authors = ["beetle"]
 description = "Combines the std `NonZero` structs into one struct"
