@@ -22,3 +22,4 @@ expect_used = { level = "deny", priority = -7 }
 [dependencies]
 default-impl = "0.1.0"
 num = "0.4.3"
+then = { git = "https://github.com/Mearkatz/then", version = "0.1.1" }

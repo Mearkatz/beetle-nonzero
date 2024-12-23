@@ -7,6 +7,7 @@ use std::{
 };
 
 use num::{Integer, PrimInt, Zero};
+use then::then;
 
 /// An integer that is known to not equal zero.
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
@@ -31,9 +32,16 @@ impl<T> NonZero<T> {
         Self { value }
     }
 
-    /// A copy of the nonzero value
+    /// A reference to the nonzero value
     pub const fn get(&self) -> &T {
         &self.value
+    }
+
+    /// A mutable reference to the nonzero value
+    /// # Safety
+    /// The caller must guarantee that the value is nonzero when the mutable reference is dropped
+    pub const unsafe fn get_mut(&mut self) -> &mut T {
+        &mut self.value
     }
 }
 
@@ -43,7 +51,7 @@ where
 {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
-        value.is_zero().not().then_some(Self { value })
+        then!(!value.is_zero(), Self { value })
     }
 }
 
@@ -65,11 +73,11 @@ where
     /// Only succeeds if the value provided was nonzero.
     /// Returns whether the operation succeeded.
     pub fn set(&mut self, value: T) -> bool {
-        let nz = value.is_zero().not();
-        if nz {
+        let nonzero = value.is_zero().not();
+        if nonzero {
             unsafe { self.set_unchecked(value) }
         }
-        nz
+        nonzero
     }
 
     /// Sets the internal value of the nonzero integer.
