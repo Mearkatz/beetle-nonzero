@@ -7,7 +7,6 @@ use std::{
 };
 
 use num::{Integer, PrimInt, Zero};
-use then::then;
 
 /// An integer that is known to not equal zero.
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
@@ -51,7 +50,7 @@ where
 {
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
-        then!(!value.is_zero(), Self { value })
+        value.is_zero().not().then_some(Self { value })
     }
 }
 
