@@ -39,8 +39,14 @@ impl<T> NonZero<T> {
     /// A mutable reference to the nonzero value
     /// # Safety
     /// The caller must guarantee that the value is nonzero when the mutable reference is dropped
+    #[deprecated(since = "0.3.14", note = "use `swap` instead")]
     pub const unsafe fn get_mut(&mut self) -> &mut T {
         &mut self.value
+    }
+
+    /// Swap the nonzero value of two `NonZero`s
+    pub fn swap(&mut self, other: &mut Self) {
+        std::mem::swap(self, other);
     }
 }
 
@@ -51,6 +57,15 @@ where
     /// Returns a new `NonZero<T>` if `value` is nonzero
     pub fn new(value: T) -> Option<Self> {
         value.is_zero().not().then_some(Self { value })
+    }
+
+    /// Tries replacing the nonzero value with a new one.
+    /// If the new value is nonzero this returns the old value,
+    /// otherwise this returns None.
+    pub fn replace(&mut self, new_value: T) -> Option<T> {
+        let mut other = Self::new(new_value)?;
+        self.swap(&mut other);
+        Some(other.value)
     }
 }
 
