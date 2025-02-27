@@ -96,6 +96,14 @@ where
     pub fn swap(&mut self, other: &mut Self) {
         std::mem::swap(self, other);
     }
+
+    /// Destructures the `NonZero`, returning the contained value.
+    /// You should probably use [`get`] unless you are trying to avoid cloning.
+    ///
+    /// [`get`]: `NonZero::get`
+    pub fn into_inner(self) -> T {
+        self.value
+    }
 }
 
 macro_rules! impl_from_primitive {
